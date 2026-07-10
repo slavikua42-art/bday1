@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: #0d0417;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            color: #fff;
+            position: relative;
+        }
+
+        /* 1. Задний Canvas (для звёздочек) */
+        #bgCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* За карточкой */
+            pointer-events: none;
+        }
+
+        /* Контейнер карточки */
+        .card {
+            position: relative;
+            width: 90%;
+            max-width: 380px;
+            height: 580px;
+            background: linear-gradient(135deg, #1f0b38, #4a1259);
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            z-index: 5; /* Карточка посередине */
+        }
+
+        .cake { 
+            width: 150px; 
+            margin-bottom: 25px;
+        }
+
+        .title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3.2rem;
+            color: #ffffff;
+            text-shadow: 0 0 10px #ff69b4, 0 0 20px #ff69b4, 0 0 30px #ff69b4;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* 2. Передний Canvas (для шариков и салютов) */
+        #fgCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10; /* Поверх карточки */
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Задний холст только для звёзд -->
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="card">
+        <svg class="cake" viewBox="0 0 100 100">
+            <ellipse cx="50" cy="18" rx="4" ry="8" fill="#ffcc00">
+                <animate attributeName="ry" values="8;5;8" dur="0.4s" repeatCount="indefinite"/>
+            </ellipse>
+            <rect x="47" y="24" width="6" height="20" fill="#f472b6" rx="2"/>
+            <rect x="25" y="44" width="50" height="15" fill="#fbcfe8" rx="3"/>
+            <rect x="20" y="58" width="60" height="20" fill="#be185d" rx="3"/>
+            <path d="M20 58 Q 25 64, 30 58 T 40 58 T 50 58 T 60 58 T 70 58 T 80 58 L 80 55 L 20 55 Z" fill="#fff"/>
+        </svg>
+
+        <h1 class="title">Happy Birthday!</h1>
+    </div>
+
+    <!-- Передний холст для шариков и салютов -->
+    <canvas id="fgCanvas"></canvas>
+
+    <script>
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        const fgCanvas = document.getElementById('fgCanvas');
+        const fgCtx = fgCanvas.getContext('2d');
+
+        let w, h;
+        function resize() {
+            w = bgCanvas.width = fgCanvas.width = window.innerWidth;
+            h = bgCanvas.height = fgCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const colors = ['#ff007f', '#00f0ff', '#ffd700', '#ff0055', '#a855f7', '#3b82f6'];
+
+        // 1. Звёздочки (Рисуются на ЗАДНЕМ фоне)
+        class Star {
+            constructor() {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.size = Math.random() * 1.5 + 0.5;
+                this.alpha = Math.random();
+                this.speed = Math.random() * 0.02 + 0.005;
+            }
+            update() {
+                this.alpha += this.speed;
+                if (this.alpha > 1 || this.alpha < 0) {
+                    this.speed = -this.speed;
+                }
+            }
+            draw() {
+                bgCtx.save();
+                bgCtx.globalAlpha = Math.max(0, this.alpha);
+                bgCtx.fillStyle = '#ffffff';
+                bgCtx.beginPath();
+                bgCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                bgCtx.fill();
+                bgCtx.restore();
+            }
+        }
+
+        // 2. Падающие шарики (Рисуются на ПЕРЕДНЕМ фоне)
+        class Balloon {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * w;
+                this.y = -20 - Math.random() * 100;
+                this.r = Math.random() * 8 + 4;
+                this.speed = Math.random() * 2 + 1;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.swing = Math.random() * 0.05;
+                this.angle = Math.random() * Math.PI * 2;
+            }
+            update() {
+                this.y += this.speed;
+                this.angle += this.swing;
+                this.x += Math.sin(this.angle) * 0.8;
+                if (this.y > h + 20) this.reset();
+            }
+            draw() {
+                fgCtx.beginPath();
+                fgCtx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                fgCtx.fillStyle = this.color;
+                fgCtx.shadowBlur = 10;
+                fgCtx.shadowColor = this.color;
+                fgCtx.fill();
+                fgCtx.shadowBlur = 0;
+            }
+        }
+
+        // 3. Салюты (Рисуются на ПЕРЕДНЕМ фоне)
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 1;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.02 + 0.01;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.05;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                fgCtx.save();
+                fgCtx.globalAlpha = Math.max(0, this.alpha);
+                fgCtx.beginPath();
+                fgCtx.arc(this.x, this.y, 2.5, 0, Math.PI * 2);
+                fgCtx.fillStyle = this.color;
+                fgCtx.shadowBlur = 8;
+                fgCtx.shadowColor = this.color;
+                fgCtx.fill();
+                fgCtx.restore();
+            }
+        }
+
+        const stars = Array.from({ length: 90 }, () => new Star());
+        const balloons = Array.from({ length: 50 }, () => new Balloon());
+        let fireworks = [];
+
+        function createFirework() {
+            const x = Math.random() * w;
+            const y = Math.random() * (h * 0.7);
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            for (let i = 0; i < 45; i++) {
+                fireworks.push(new Particle(x, y, color));
+            }
+        }
+
+        setInterval(createFirework, 700);
+
+        function animate() {
+            bgCtx.clearRect(0, 0, w, h);
+            fgCtx.clearRect(0, 0, w, h);
+
+            // Рендер звёзд строго НАД БЕГРАУНДОМ (под карточкой)
+            stars.forEach(s => {
+                s.update();
+                s.draw();
+            });
+
+            // Рендер шариков и салютов ПОВЕРХ карточки
+            balloons.forEach(b => {
+                b.update();
+                b.draw();
+            });
+
+            fireworks.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) fireworks.splice(index, 1);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
